@@ -1,3 +1,51 @@
+const {JSDOM} = require("jsdom");
+
+
+
+
+
+// function getURLsFromHTML(htmlBody, baseURL){
+//     const urls = []
+//     const dom = new JSDOM(htmlBody)
+//     const linkElements = dom.window.document.querySelectorAll('a')
+//     for(const linkElement of linkElements) {
+
+//         if(linkElement.href.slice(0, 1) === "/"){
+//                urls.push(`${baseURL}${linkElement.href}`)
+//         }else{
+//             urls.push(linkElement.href)
+
+//         }
+//     }
+//     return urls
+//  }
+
+function getURLsFromHTML(htmlBody, baseURL){
+    const urls = []
+    const dom = new JSDOM(htmlBody)
+    const linkElements = dom.window.document.querySelectorAll('a')
+    for(const linkElement of linkElements) {
+
+        if(linkElement.href.slice(0, 1) === "/"){
+            try {
+              const urlObj = new URL(`${baseURL}${linkElement.href}`)
+              urls.push(urlObj.href)
+            } catch (error) {
+                console.log(`Error with relative urls: ${error}`)
+            }
+        }else{
+
+            try {
+                const urlObj = new URL(`${linkElement.href}`)
+                urls.push(urlObj.href)
+              } catch (error) {
+                  console.log(`Error with absolute urls: ${error}`)
+              }
+
+        }
+    }
+    return urls
+ }
 function normalizeURL(urlString){
      const urlObj = new URL(urlString);
      const hostPath =  `${urlObj.hostname}${urlObj.pathname}`
@@ -8,5 +56,6 @@ function normalizeURL(urlString){
 }
 
 module.exports = {
-    normalizeURL
+    normalizeURL,
+    getURLsFromHTML
 }
