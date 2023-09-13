@@ -4,6 +4,7 @@ const {JSDOM} = require("jsdom");
 
 
 
+
 // function getURLsFromHTML(htmlBody, baseURL){
 //     const urls = []
 //     const dom = new JSDOM(htmlBody)
@@ -15,31 +16,57 @@ const {JSDOM} = require("jsdom");
 //         }else{
 //             urls.push(linkElement.href)
 
-//         }
+//         } 
 //     }
 //     return urls
 //  }
 
-async function crawlPage(currentURL) {
-       console.log(`Currently Crawling : ${currentURL}`);
+async function crawlPage(baseURL, currentURL, pages) {
+        
+       const baseURLObj = new URL(baseURL);
+       const currentURLObj = new URL(currentURL);
+       if(baseURLObj.hostname !== currentURLObj.hostname){
+        return pages
+       }
+
+       const normalizedCurrentURL = normalizeURL(currentURL);
+        if(pages[normalizedCurrentURL]>0){
+            pages[normalizedCurrentURL]++
+            return pages;
+        }
+       
+        pages[normalizedCurrentURL] = 1
+        console.log(`Currently Crawling : ${currentURL}`);
+
+
+
 
        try {
          const resp = await fetch(currentURL)
          if(resp.status > 399){
             console.log(`Error with status code: ${resp.status} on page: ${currentURL} `)
-            return 
+            return pages
          }
 
          const contentType = resp.headers.get("content-type")
          if(!contentType.includes("text/html")){
             console.log(`No html response content: ${contentType} on page: ${currentURL} `)
-            return 
+            return pages
          }
-         console.log(await resp.text())
+        //  console.log(await resp.text())
+
+        const htmlBody = await resp.text()
+        const nextURLs = getURLsFromHTML(htmlBody, baseURL)
+        for(const nextURL of nextURLs){
+            pages = await crawlPage(baseURL, nextURL, pages)
+        }
+
+
        } catch (error) {
          console.log(`Error in fetching : ${error.message} on page: ${currentURL}`)
        }
        
+    return pages   
 }
 
  
@@ -68,7 +95,9 @@ function getURLsFromHTML(htmlBody, baseURL){
         }
     }
     return urls
- }
+}
+
+
 function normalizeURL(urlString){
      const urlObj = new URL(urlString);
      const hostPath =  `${urlObj.hostname}${urlObj.pathname}`
